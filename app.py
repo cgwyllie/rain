@@ -9,6 +9,9 @@ import tornadoredis
 
 REDIS_CHANNEL = 'events'
 
+def newRedisClient():
+	return tornadoredis.Client('localhost', 6379, None, None)
+
 class EchoWSHandler(tornado.websocket.WebSocketHandler):
 	def open(self):
 		print "WS opened"
@@ -32,7 +35,7 @@ class RainHandler(tornado.websocket.WebSocketHandler):
 	
 	@tornado.gen.engine
 	def listen(self):
-		self.client = tornadoredis.Client()
+		self.client = newRedisClient()
 		self.client.connect()
 		yield tornado.gen.Task(self.client.subscribe, REDIS_CHANNEL)
 		self.client.listen(self.onEvent)
@@ -75,7 +78,7 @@ class RainHandler(tornado.websocket.WebSocketHandler):
 		self.client.unsubscribe(REDIS_CHANNEL)
 		self.client.disconnect()
 
-pubClient = tornadoredis.Client()
+pubClient = newRedisClient()
 pubClient.connect()
 
 application = tornado.web.Application([
