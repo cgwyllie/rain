@@ -56,6 +56,12 @@ var Rain = (function () {
         };
         
         CodeMirror.commands.save = this.save;
+        CodeMirror.modeURL = "/assets/cm/mode/%N/%N.js"; // TODO make configurable
+        
+        $('#modeSelect').change(function (e) {
+            codeMirror.setOption("mode", e.target.value);
+            CodeMirror.autoLoadMode(codeMirror, e.target.value);
+        });
         
         function computeAndSendPatches() {
             var currentValue = codeMirror.getValue();
