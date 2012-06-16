@@ -182,124 +182,15 @@
     <script src="assets/cm/lib/codemirror.js"></script>
     <script src="assets/cm/lib/util/loadmode.js"></script>
     <script src="assets/cm/mode/javascript/javascript.js"></script>
-    <script src="assets/js/dmp.js"></script>
-    <script src="assets/js/rain.js"></script>
+    <script src="assets/js/app.js"></script>
     <script>
         $(function () {
-            var editor = new Rain({
-                textAreaId: "editor",
-                serverURL: "ws://localhost:8888/rain"
+            var Rain = require('Rain');
+            window.editor = new Rain.Editor({
+                textArea: document.getElementById('editor'),
+                serverURL: 'ws://localhost:8888/rain'
             });
         });
-        /*
-        function uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-                return v.toString(16);
-            });
-        }
-        
-        $(function() {
-            var PATCHING_INTERVAL = 800;
-            var Event = {
-                INIT: 0,
-                PUSH_PATCH: 1,
-                PUSH_SNAPSHOT: 2
-            };
-            
-            var myId = uuid();
-            
-            var dmp = new diff_match_patch();
-            
-            var serverSocket = new WebSocket("ws://localhost:8888/rain");
-            
-            CodeMirror.commands.save = function (ed) {
-                serverSocket.send("s"+JSON.stringify({
-                    event: Event.PUSH_SNAPSHOT,
-                    user: myId,
-                    data: ed.getValue()
-                }));
-            };
-            
-            var rainEditor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-                lineNumbers: true,
-                fixedGutter: true
-            });
-            
-            var lastKnownValue = "";
-            var patches;
-            
-            function computeAndSendPatches() {
-                var currentValue = rainEditor.getValue();
-                patches = dmp.patch_make(lastKnownValue, currentValue);
-                
-                if (patches.length) {
-                    serverSocket.send(JSON.stringify({
-                        event: Event.PUSH_PATCH,
-                        user: myId,
-                        data: dmp.patch_toText(patches)
-                    }));
-                }
-                
-                lastKnownValue = currentValue;
-            }
-            
-            var diffInterval = null;
-            var currentCursor, lineCount, newLineCount;
-            
-            serverSocket.onmessage = function (message) {
-                message = JSON.parse(message.data);
-                //console.log(message);
-                
-                if (message.user != myId) {
-                    switch (message.event) {
-                        case Event.PUSH_PATCH:
-                            clearInterval(diffInterval);
-                            computeAndSendPatches();
-                            
-                            var patched = dmp.patch_apply(dmp.patch_fromText(message.data), rainEditor.getValue());
-                            //console.log(patched);
-                            currentCursor = rainEditor.getCursor();
-                            
-                            lineCount = rainEditor.lineCount();
-                            rainEditor.setValue(patched[0]);
-                            newLineCount = rainEditor.lineCount();
-                            // TODO: Update for same line editing too based on line lengths?
-                            if (newLineCount < lineCount) {
-                                currentCursor.line -= (lineCount - newLineCount);
-                            }
-                            else if (newLineCount > lineCount) {
-                                currentCursor.line += (newLineCount - lineCount);
-                            }
-                            rainEditor.setCursor(currentCursor);
-                            
-                            lastKnownValue = patched[0];
-                            diffInterval = setInterval(function(){computeAndSendPatches();}, PATCHING_INTERVAL);
-                            break;
-                        case Event.PUSH_SNAPSHOT:
-                            clearInterval(diffInterval);
-                            lastKnownValue = rainEditor.getValue();
-                            patches = dmp.patch_make(lastKnownValue, message.data);
-                            patched = dmp.patch_apply(patches, lastKnownValue);
-                            rainEditor.setValue(patched[0]);
-                            lastKnownValue = patched[0];
-                            diffInterval = setInterval(function(){computeAndSendPatches();}, PATCHING_INTERVAL);
-                            break;
-                        case Event.INIT:
-                            lastKnownValue = JSON.parse(message.snapshot).data;
-                            var patch, patched;
-                            for (var i = 0; i < message.patchList.length; i++) {
-                                patch = JSON.parse(message.patchList[i]);
-                                patched = dmp.patch_apply(dmp.patch_fromText(patch.data), lastKnownValue);
-                                lastKnownValue = patched[0];
-                            }
-                            rainEditor.setValue(lastKnownValue);
-                            diffInterval = setInterval(function(){computeAndSendPatches();}, PATCHING_INTERVAL);
-                            break;
-                    }
-                }
-            };
-        });*/
     </script>
 
   </body>

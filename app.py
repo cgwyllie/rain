@@ -9,9 +9,14 @@ import tornadoredis
 
 REDIS_CHANNEL = 'events'
 
+EVENT_INIT = 0
+EVENT_PUSH_PATCH = 1
+EVENT_PUSH_SNAPSHOT = 2
+
 def newRedisClient():
 	return tornadoredis.Client('localhost', 6379, None, None)
 
+"""
 class EchoWSHandler(tornado.websocket.WebSocketHandler):
 	def open(self):
 		print "WS opened"
@@ -27,6 +32,7 @@ class EchoWSHandler(tornado.websocket.WebSocketHandler):
 		
 	def pulse(self):
 		self.write_message(u"pulse")
+"""
 
 class RainHandler(tornado.websocket.WebSocketHandler):
 	def initialize(self, publisher):
@@ -50,21 +56,24 @@ class RainHandler(tornado.websocket.WebSocketHandler):
 		print "(rain) WS opened"
 		snapshot = yield tornado.gen.Task(self.publisher.get, 'snapshot')
 		patchList = yield tornado.gen.Task(self.publisher.lrange, 'patchList', 0, -1)
+		print snapshot
 		if snapshot is not None:
 			self.write_message(escape.json_encode({
-				"event": 0,
-				"snapshot": snapshot,
-				"patchList": patchList,
-				"user": ""
+				"event": EVENT_INIT,
+				"data": {
+					"snapshot": snapshot,
+					"patchList": patchList,
+					"user": ""
+				}
 			}))
 		
 	@tornado.gen.engine
 	def on_message(self, message):
 		print "(rain) publish: " + message
-		if message[0:1] == "s":
+		messageObject = escape.json_decode(message)
+		if messageObject["event"] == EVENT_PUSH_SNAPSHOT:
 			print "(rain) Snapshotting..."
-			message = message[1:]
-			res = yield tornado.gen.Task(self.publisher.set, 'snapshot', message)
+			res = yield tornado.gen.Task(self.publisher.set, 'snapshot', messageObject["data"]["data"])
 			print res
 			res = yield tornado.gen.Task(self.publisher.delete, 'patchList')
 			print res
@@ -82,11 +91,12 @@ pubClient = newRedisClient()
 pubClient.connect()
 
 application = tornado.web.Application([
-	(r"/websocket", EchoWSHandler),
+	#(r"/websocket", EchoWSHandler),
 	(r"/rain", RainHandler, dict(publisher=pubClient)),
 	(r"/(.*)", tornado.web.StaticFileHandler, {"path": "./public"}),
 ])
 
 if __name__ == "__main__":
+	print "Rain starting up... Listening on localhost:8888"
 	application.listen(8888)
 	tornado.ioloop.IOLoop.instance().start()
