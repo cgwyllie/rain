@@ -11,3 +11,6 @@ clean:
 	rm public/assets/css/app.css
 	rm public/assets/js/app.js
 	rm app/templates.js
+
+clean-data:
+	redis-cli KEYS "*" | xargs redis-cli DEL

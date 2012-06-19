@@ -75,8 +75,10 @@
                 <textarea id="editor" class="fullheight"></textarea>
             </div>
             <div class="span3">
+                <input type="text" placeholder="Document Title" id="documentTitle" />
                 <select id="modeSelect">
-                    <option value="javascript" selected="selected">Javascript</option>
+                    <option value="markdown" selected="selected">Markdown</option>
+                    <option value="javascript">Javascript</option>
                     <option value="php">PHP</option>
                     <option value="python">Python</option>
                     <option value="ruby">Ruby</option>
@@ -181,7 +183,8 @@
     <script src="assets/js/bootstrap-typeahead.js"></script>
     <script src="assets/cm/lib/codemirror.js"></script>
     <script src="assets/cm/lib/util/loadmode.js"></script>
-    <script src="assets/cm/mode/javascript/javascript.js"></script>
+    <script src="assets/cm/mode/xml/xml.js"></script>
+    <script src="assets/cm/mode/markdown/markdown.js"></script>
     <script src="assets/js/app.js"></script>
     <script>
         $(function () {

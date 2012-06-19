@@ -8,12 +8,24 @@ Event =
     PUSH_PATCH: 1
     PUSH_SNAPSHOT: 2
     
+EditorModes = [
+    "markdown"
+    "javascript"
+    "php"
+    "python"
+    "ruby"
+    "css"
+    "xml"
+    "mysql"
+]
+    
 class Editor
     constructor: (@options) ->
         if not @options.codeMirrorArgs?
             @options.codeMirrorArgs =
                 lineNumbers: true
                 fixedGutter: true
+                mode: 'markdown'
             
         @options.diffInterval = 800
         
@@ -28,6 +40,10 @@ class Editor
         
         @userId = Util.uuid4()
         
+        @documentId = Util.uuid4()
+        @documentTitle = ''
+        @documentMode = 'markdown'
+        
         @lastKnownValue = ""
         @diffInterval = null
         
@@ -36,14 +52,29 @@ class Editor
 
         CodeMirror.modeURL = "/assets/cm/mode/%N/%N.js" # TODO make configurable
         
-        $('#modeSelect').change (e) ->
-            @codeMirror.setOption("mode", e.target.value)
-            CodeMirror.autoLoadMode(@codeMirror, e.target.value)
+        $('#modeSelect').change (e) =>
+            @setMode e.target.value
+            
         
+        $('#documentTitle').keyup (e) =>
+            @documentTitle = e.target.value
+    
+    setMode: (mode) ->
+        return unless mode
+        @documentMode = mode
+        @codeMirror.setOption("mode", mode)
+        CodeMirror.autoLoadMode(@codeMirror, mode)
+        
+        index = EditorModes.indexOf(@documentMode)
+        index = 0 if index < 0
+        $('#modeSelect')[0].selectedIndex = index
+    
     save: ->
         @server.send(Event.PUSH_SNAPSHOT, {
             user: @userId
-            data: @codeMirror.getValue()
+            snapshot: @codeMirror.getValue()
+            title: @documentTitle
+            mode: @documentMode
         })
     
     computeAndSendPatches: ->
@@ -53,7 +84,7 @@ class Editor
         if patches.length
             @server.send(Event.PUSH_PATCH, {
                 user: @userId
-                data: DMP.patch_toText(patches)
+                patch: DMP.patch_toText(patches)
             })
         
         @lastKnownValue = currentValue
@@ -73,7 +104,13 @@ class Editor
         
         @codeMirror.setCursor(currentCursor)
         @lastKnownValue = newValue
+    
+    setDocumentProperties: (properties) ->
+        @documentTitle = properties.title
+        $('#documentTitle').val(@documentTitle)
         
+        @setMode properties.mode
+    
     diffFn: =>
         @computeAndSendPatches()
     
@@ -99,11 +136,11 @@ class Editor
             )
 
         @server.on Event.INIT, handlerWrap((message) =>
+            @setDocumentProperties(message)
             @lastKnownValue = message.snapshot
             for patch in message.patchList
-                patch = JSON.parse patch
                 patched = DMP.patch_apply(
-                    DMP.patch_fromText(patch.data.data),
+                    DMP.patch_fromText(patch),
                     @lastKnownValue
                 )
                 @lastKnownValue = patched[0]
@@ -112,8 +149,9 @@ class Editor
         )
             
         @server.on Event.PUSH_SNAPSHOT, handlerWrap((message) =>
+            @setDocumentProperties(message)
             @lastKnownValue = @codeMirror.getValue()
-            patches = DMP.patch_make @lastKnownValue, message.data # TODO: is this back to front? - No, want to update your state (if you're behind the times?!)
+            patches = DMP.patch_make @lastKnownValue, message.snapshot # TODO: is this back to front? - No, want to update your state (if you're behind the times?!)
             patched = DMP.patch_apply patches, @lastKnownValue
             @setEditorValue patched[0]
         )
@@ -121,7 +159,7 @@ class Editor
         @server.on Event.PUSH_PATCH, handlerWrap((message) =>
             @computeAndSendPatches()
             patched = DMP.patch_apply(
-                DMP.patch_fromText(message.data),
+                DMP.patch_fromText(message.patch),
                 @lastKnownValue
             )
             
